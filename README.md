@@ -284,7 +284,7 @@ This project is open source and available for educational purposes.
 
 Contributions, issues, and feature requests are welcome!
 
-## 👤 Author
+## 👤 Author --G M Vishwa prasad
 
 Created as part of a Machine Learning project demonstrating end-to-end ML pipeline implementation.
 
