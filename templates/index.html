@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spam Detection System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Spam Detection System</h1>
+            <p class="subtitle">Machine Learning Powered Message Classifier</p>
+        </div>
+
+        <div class="main-content">
+            <div class="input-section">
+                <label for="message-input">Enter your message:</label>
+                <textarea 
+                    id="message-input" 
+                    placeholder="Type or paste your message here..."
+                    rows="6"
+                ></textarea>
+                
+                <button id="predict-btn" onclick="predictSpam()">
+                    <span id="btn-text">Predict</span>
+                    <span id="btn-loader" class="loader" style="display: none;"></span>
+                </button>
+            </div>
+
+            <div id="result-section" class="result-section" style="display: none;">
+                <div id="result-card" class="result-card">
+                    <h2 id="result-title">Prediction Result</h2>
+                    <div id="result-content">
+                        <div id="prediction-badge" class="prediction-badge"></div>
+                        <div id="probability-info" class="probability-info"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="error-section" class="error-section" style="display: none;">
+                <div class="error-card">
+                    <span class="error-icon">⚠️</span>
+                    <p id="error-message"></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Built with Flask & Scikit-learn</p>
+        </div>
+    </div>
+
+    <script>
+        // Handle Enter key press (Ctrl+Enter to submit)
+        document.getElementById('message-input').addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                predictSpam();
+            }
+        });
+
+        async function predictSpam() {
+            const messageInput = document.getElementById('message-input');
+            const message = messageInput.value.trim();
+            
+            // Reset UI
+            document.getElementById('result-section').style.display = 'none';
+            document.getElementById('error-section').style.display = 'none';
+            
+            // Validate input
+            if (!message) {
+                showError('Please enter a message to predict.');
+                return;
+            }
+            
+            // Show loading state
+            const btn = document.getElementById('predict-btn');
+            const btnText = document.getElementById('btn-text');
+            const btnLoader = document.getElementById('btn-loader');
+            
+            btn.disabled = true;
+            btnText.style.display = 'none';
+            btnLoader.style.display = 'inline-block';
+            
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: message })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'An error occurred');
+                }
+                
+                // Show result
+                displayResult(data.prediction, data.probability);
+                
+            } catch (error) {
+                showError(error.message || 'Failed to get prediction. Please try again.');
+            } finally {
+                // Reset button state
+                btn.disabled = false;
+                btnText.style.display = 'inline';
+                btnLoader.style.display = 'none';
+            }
+        }
+        
+        function displayResult(prediction, probability) {
+            const resultSection = document.getElementById('result-section');
+            const predictionBadge = document.getElementById('prediction-badge');
+            const probabilityInfo = document.getElementById('probability-info');
+            
+            // Set prediction badge
+            const isSpam = prediction === 'Spam';
+            predictionBadge.textContent = prediction;
+            predictionBadge.className = `prediction-badge ${isSpam ? 'spam' : 'not-spam'}`;
+            
+            // Set probability if available
+            if (probability !== null && probability !== undefined) {
+                const percentage = (probability * 100).toFixed(2);
+                probabilityInfo.innerHTML = `
+                    <p class="probability-label">Confidence:</p>
+                    <div class="probability-bar">
+                        <div class="probability-fill" style="width: ${percentage}%"></div>
+                    </div>
+                    <p class="probability-value">${percentage}%</p>
+                `;
+            } else {
+                probabilityInfo.innerHTML = '';
+            }
+            
+            resultSection.style.display = 'block';
+            resultSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        
+        function showError(message) {
+            const errorSection = document.getElementById('error-section');
+            const errorMessage = document.getElementById('error-message');
+            
+            errorMessage.textContent = message;
+            errorSection.style.display = 'block';
+            errorSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    </script>
+</body>
+</html>
